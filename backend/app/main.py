@@ -3,9 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import router
 from app.core.config import settings
+from app.db.base import Base
+from app.db.session import engine
+
+# Cria as tabelas automaticamente no SQLite
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
+# CORS liberado para o front (React / TS)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,5 +20,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Rotas da API
 app.include_router(router, prefix=settings.API_V1_STR)
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
 
