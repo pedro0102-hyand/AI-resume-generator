@@ -6,6 +6,12 @@ from app.core.config import settings
 from app.db.base import Base
 from app.db.session import engine
 
+# Importa todos os models ANTES de criar as tabelas
+from app.models.user import User
+from app.models.resume import Resume
+from app.models.generated_resume import GeneratedResume
+from app.models.template import Template
+
 # Cria as tabelas automaticamente no SQLite
 Base.metadata.create_all(bind=engine)
 
