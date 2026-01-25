@@ -9,7 +9,7 @@ def create_resume(db: Session, user_id: int, cv_data: dict):
     db.refresh(resume)
     return resume
 
-def get_user_resume(db: Session, user_id: int):
+def get_user_resumes(db: Session, user_id: int):
 
     return db.query(Resume).filter(Resume.user_id == user_id).all()
 

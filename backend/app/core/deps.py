@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
@@ -7,7 +7,8 @@ from app.core.database import get_db
 from app.models.user import User
 from app.core.security import SECRET_KEY, ALGORITHM
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+# ← IMPORTANTE: O tokenUrl precisa ser o caminho COMPLETO da rota de login
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 def get_current_user(
@@ -15,13 +16,16 @@ def get_current_user(
     db: Session = Depends(get_db),
 ):
     credentials_exception = HTTPException(
-        status_code=401,
+        status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Não autenticado",
+        headers={"WWW-Authenticate": "Bearer"},
     )
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
     except JWTError:
         raise credentials_exception
 

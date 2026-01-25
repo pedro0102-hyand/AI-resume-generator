@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, ForeignKey, JSON
-from sqlalchemy import relationship
+from sqlalchemy.orm import relationship
 from app.db.base import Base
 
 class Resume(Base):
