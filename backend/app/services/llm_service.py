@@ -1,9 +1,9 @@
 import json
-from google import genai
+import google.generativeai as genai
 from app.core.config import settings
 
-# Configura o cliente do Gemini com a nova API
-client = genai.Client(api_key=settings.GEMINI_API_KEY)
+# Configura o Gemini com a API key (API estável)
+genai.configure(api_key=settings.GEMINI_API_KEY)
 
 
 def generate_resume_with_ai(cv_data: dict, job_context: dict) -> dict:
@@ -50,17 +50,14 @@ def generate_resume_with_ai(cv_data: dict, job_context: dict) -> dict:
     """
 
     try:
-        # Gera conteúdo usando a nova API do Gemini
-        response = client.models.generate_content(
-            model='gemini-1.5-flash',
-            contents=prompt
-        )
+        # Usa a API estável do generativeai
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt)
         
         text = response.text.strip()
         
         # Remove markdown code blocks se existirem
         if text.startswith("```"):
-            # Remove ```json ou ``` do início
             lines = text.split("\n")
             text = "\n".join(lines[1:-1])  # Remove primeira e última linha
         
