@@ -117,3 +117,59 @@ def export_resume_pdf(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao gerar arquivo PDF: {str(e)}")
+
+@router.get("/word/{resume_id}")
+def export_resume_rtf(
+    resume_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    # 1. Busca o currículo no banco
+    resume = db.query(Resume).filter(
+        Resume.id == resume_id, 
+        Resume.user_id == current_user.id
+    ).first()
+    
+    if not resume:
+        raise HTTPException(status_code=404, detail="Currículo não encontrado")
+
+    data = resume.data #
+    
+    try:
+        # 2. Construção manual do corpo do documento RTF
+        # RTF utiliza uma sintaxe de controle por contra-barras
+        name = data.get("fullName", "Sem Nome")
+        summary = data.get("summary", "")
+        
+        # Início do documento RTF (Configuração de fontes e cores)
+        rtf_content = r"{\rtf1\ansi\deff0 {\fonttbl {\f0 Arial;}}"
+        rtf_content += r"\viewkind4\uc1 \pard\qc\f0\fs44\b " + name + r"\b0\fs20\par"
+        rtf_content += r"\pard\qc " + f"{data.get('email')} | {data.get('phone')}" + r"\par\sb120\par"
+        
+        # Seção Resumo
+        rtf_content += r"\pard\b\fs28 RESUMO PROFISSIONAL\b0\fs20\par"
+        rtf_content += r"\pard\fs22 " + summary + r"\par\sb120\par"
+        
+        # Seção Experiência
+        if data.get("experience"):
+            rtf_content += r"\pard\b\fs28 EXPERIÊNCIA PROFISSIONAL\b0\fs20\par"
+            for exp in data.get("experience"):
+                rtf_content += r"\pard\b\fs24 " + exp.get("role") + " @ " + exp.get("company") + r"\b0\par"
+                rtf_content += r"\pard\i " + exp.get("period", "") + r"\i0\par"
+                rtf_content += r"\pard " + exp.get("description", "") + r"\par\sb60\par"
+        
+        rtf_content += r"}"
+
+        # 3. Retorno do arquivo
+        headers = {
+            'Content-Disposition': f'attachment; filename="resume_{resume_id}.doc"'
+        }
+        
+        return Response(
+            content=rtf_content.encode('latin-1', 'replace'),
+            media_type="application/msword",
+            headers=headers
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao gerar documento: {str(e)}")
