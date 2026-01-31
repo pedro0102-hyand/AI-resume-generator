@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ fullName }} - Currículo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            line-height: 1.6;
+            color: #1e293b;
+            background: #ffffff;
+            padding: 40px;
+            max-width: 850px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        header {
+            text-align: center;
+            border-bottom: 3px solid #1e293b;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 38px;
+            font-weight: 700;
+            color: #0f172a;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 12px;
+        }
+        
+        .contact-info {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 14px;
+            color: #64748b;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        .contact-info span:not(:last-child)::after {
+            content: "•";
+            margin-left: 12px;
+            color: #cbd5e1;
+        }
+        
+        /* Sections */
+        section {
+            margin-bottom: 30px;
+        }
+        
+        h2 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e293b;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #cbd5e1;
+        }
+        
+        /* Summary */
+        .summary {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #334155;
+            text-align: justify;
+            font-style: italic;
+        }
+        
+        /* Skills */
+        .skills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .skill-tag {
+            background: #f8fafc;
+            color: #334155;
+            padding: 5px 12px;
+            border-radius: 3px;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid #e2e8f0;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        /* Experience */
+        .experience-item {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+        
+        .experience-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 3px;
+        }
+        
+        .experience-role {
+            font-size: 17px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        
+        .experience-period {
+            font-size: 13px;
+            color: #64748b;
+            font-style: italic;
+            font-weight: 500;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        .experience-company {
+            font-size: 15px;
+            color: #334155;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+        
+        .experience-description {
+            font-size: 14px;
+            line-height: 1.7;
+            color: #475569;
+            white-space: pre-line;
+        }
+        
+        /* Education */
+        .education-item {
+            margin-bottom: 15px;
+        }
+        
+        .education-institution {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        
+        .education-details {
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 2px;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        /* Print */
+        @media print {
+            body {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <h1>{{ fullName }}</h1>
+        <div class="contact-info">
+            {% if email %}<span>{{ email }}</span>{% endif %}
+            {% if phone %}<span>{{ phone }}</span>{% endif %}
+            {% if location %}<span>{{ location }}</span>{% endif %}
+            {% if linkedin %}<span>LinkedIn</span>{% endif %}
+        </div>
+    </header>
+    
+    <!-- Professional Summary -->
+    {% if summary %}
+    <section>
+        <h2>Resumo Profissional</h2>
+        <p class="summary">{{ summary }}</p>
+    </section>
+    {% endif %}
+    
+    <!-- Skills -->
+    {% if skills and skills|length > 0 %}
+    <section>
+        <h2>Competências</h2>
+        <div class="skills-container">
+            {% for skill in skills %}
+            <span class="skill-tag">{{ skill }}</span>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    
+    <!-- Professional Experience -->
+    {% if experience and experience|length > 0 %}
+    <section>
+        <h2>Experiência Profissional</h2>
+        {% for exp in experience %}
+        <div class="experience-item">
+            <div class="experience-header">
+                <h3 class="experience-role">{{ exp.role }}</h3>
+                <span class="experience-period">{{ exp.period }}</span>
+            </div>
+            <div class="experience-company">{{ exp.company }}</div>
+            <p class="experience-description">{{ exp.description }}</p>
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+    
+    <!-- Education -->
+    {% if education and education|length > 0 %}
+    <section>
+        <h2>Formação Acadêmica</h2>
+        {% for edu in education %}
+        <div class="education-item">
+            <div class="education-institution">{{ edu.institution }}</div>
+            <div class="education-details">{{ edu.degree }} | {{ edu.year }}</div>
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+</body>
+</html>

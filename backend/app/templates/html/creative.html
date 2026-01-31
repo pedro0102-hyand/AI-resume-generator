@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ fullName }} - Currículo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            line-height: 1.6;
+            color: #1e293b;
+            background: #ffffff;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        header {
+            background: #0f172a;
+            color: #ffffff;
+            padding: 40px;
+        }
+        
+        h1 {
+            font-size: 36px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        
+        .contact-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 14px;
+            color: #cbd5e1;
+        }
+        
+        .contact-info span:not(:last-child)::after {
+            content: "•";
+            margin-left: 15px;
+            color: #475569;
+        }
+        
+        /* Main Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 0;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            background: #f8fafc;
+            padding: 30px 25px;
+            border-right: 3px solid #e2e8f0;
+        }
+        
+        /* Main Content */
+        .main-content {
+            padding: 30px 40px;
+        }
+        
+        /* Sections */
+        section {
+            margin-bottom: 30px;
+        }
+        
+        h2 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2563eb;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+        }
+        
+        .sidebar h2 {
+            color: #1e293b;
+            border-bottom: 2px solid #cbd5e1;
+        }
+        
+        .main-content h2 {
+            border-bottom: 2px solid #2563eb;
+        }
+        
+        /* Summary */
+        .summary {
+            font-size: 15px;
+            line-height: 1.7;
+            color: #475569;
+            text-align: justify;
+        }
+        
+        /* Skills */
+        .skills-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .skill-tag {
+            background: #e0f2fe;
+            color: #0c4a6e;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+        }
+        
+        /* Experience */
+        .experience-item {
+            margin-bottom: 28px;
+            page-break-inside: avoid;
+        }
+        
+        .experience-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 5px;
+        }
+        
+        .experience-role {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        
+        .experience-period {
+            font-size: 13px;
+            color: #64748b;
+            font-style: italic;
+            font-weight: 500;
+        }
+        
+        .experience-company {
+            font-size: 15px;
+            color: #2563eb;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .experience-description {
+            font-size: 14px;
+            line-height: 1.7;
+            color: #475569;
+            white-space: pre-line;
+        }
+        
+        /* Education */
+        .education-item {
+            margin-bottom: 18px;
+        }
+        
+        .education-institution {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 3px;
+        }
+        
+        .education-details {
+            font-size: 13px;
+            color: #64748b;
+            line-height: 1.5;
+        }
+        
+        /* Print */
+        @media print {
+            .container {
+                max-width: 100%;
+            }
+            
+            header {
+                padding: 30px;
+            }
+            
+            .sidebar {
+                padding: 20px 15px;
+            }
+            
+            .main-content {
+                padding: 20px 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>{{ fullName }}</h1>
+            <div class="contact-info">
+                {% if email %}<span>{{ email }}</span>{% endif %}
+                {% if phone %}<span>{{ phone }}</span>{% endif %}
+                {% if location %}<span>{{ location }}</span>{% endif %}
+                {% if linkedin %}<span>LinkedIn</span>{% endif %}
+            </div>
+        </header>
+        
+        <!-- Content Grid -->
+        <div class="content-grid">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <!-- Summary -->
+                {% if summary %}
+                <section>
+                    <h2>Sobre</h2>
+                    <p class="summary">{{ summary }}</p>
+                </section>
+                {% endif %}
+                
+                <!-- Skills -->
+                {% if skills and skills|length > 0 %}
+                <section>
+                    <h2>Habilidades</h2>
+                    <div class="skills-container">
+                        {% for skill in skills %}
+                        <span class="skill-tag">{{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+                
+                <!-- Education -->
+                {% if education and education|length > 0 %}
+                <section>
+                    <h2>Formação</h2>
+                    {% for edu in education %}
+                    <div class="education-item">
+                        <div class="education-institution">{{ edu.institution }}</div>
+                        <div class="education-details">{{ edu.degree }}<br>{{ edu.year }}</div>
+                    </div>
+                    {% endfor %}
+                </section>
+                {% endif %}
+            </aside>
+            
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Professional Experience -->
+                {% if experience and experience|length > 0 %}
+                <section>
+                    <h2>Experiência Profissional</h2>
+                    {% for exp in experience %}
+                    <div class="experience-item">
+                        <div class="experience-header">
+                            <h3 class="experience-role">{{ exp.role }}</h3>
+                            <span class="experience-period">{{ exp.period }}</span>
+                        </div>
+                        <div class="experience-company">{{ exp.company }}</div>
+                        <p class="experience-description">{{ exp.description }}</p>
+                    </div>
+                    {% endfor %}
+                </section>
+                {% endif %}
+            </main>
+        </div>
+    </div>
+</body>
+</html>
