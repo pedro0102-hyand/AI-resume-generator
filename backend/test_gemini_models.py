@@ -1,6 +1,7 @@
+#!/usr/bin/env python3
 """
-Script para testar modelos Gemini com a API estável
-Execute: python test_api_stable.py
+Script para listar todos os modelos Gemini disponíveis na sua API key
+Execute: python check_gemini_models.py
 """
 import os
 from dotenv import load_dotenv
@@ -9,40 +10,44 @@ import google.generativeai as genai
 load_dotenv()
 
 # Configura a API
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+api_key = os.getenv("GEMINI_API_KEY")
 
-print("🔍 Testando Google Generative AI (API estável)...\n")
-print("=" * 60)
+if not api_key:
+    print("❌ GEMINI_API_KEY não encontrada no .env")
+    exit(1)
 
-# Lista de modelos para testar
-test_models = [
-    'gemini-1.5-flash',
-    'gemini-1.5-pro',
-    'gemini-1.0-pro',
-    'gemini-pro',
-]
+genai.configure(api_key=api_key)
 
-for model_name in test_models:
-    try:
-        print(f"\n🧪 Testando: {model_name}")
-        model = genai.GenerativeModel(model_name)
-        response = model.generate_content("Say hello in one word")
-        
-        print(f"✅ FUNCIONA: {model_name}")
-        print(f"   Resposta: {response.text[:50]}")
-        print("   " + "=" * 56)
-        
-    except Exception as e:
-        error_msg = str(e)
-        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
-            print(f"⚠️  RATE LIMIT: {model_name}")
-            print(f"   Aguarde alguns minutos e tente novamente")
-        elif "404" in error_msg or "not found" in error_msg.lower():
-            print(f"❌ NÃO EXISTE: {model_name}")
-        else:
-            print(f"❌ ERRO: {model_name}")
-            print(f"   {error_msg[:80]}")
-        print("   " + "=" * 56)
+print("🔍 Buscando modelos disponíveis do Google Gemini...\n")
+print("=" * 70)
 
-print("\n" + "=" * 60)
-print("✨ Teste concluído!")
+try:
+    # Lista todos os modelos disponíveis
+    models = genai.list_models()
+    
+    print(f"\n✅ Modelos disponíveis na sua API key:\n")
+    
+    for model in models:
+        # Filtra apenas modelos que suportam generateContent
+        if 'generateContent' in model.supported_generation_methods:
+            print(f"📦 {model.name}")
+            print(f"   Display Name: {model.display_name}")
+            print(f"   Descrição: {model.description}")
+            print(f"   Métodos: {', '.join(model.supported_generation_methods)}")
+            print(f"   " + "-" * 66)
+    
+    print("\n" + "=" * 70)
+    print("\n💡 Modelos recomendados para usar no código:\n")
+    print("   • gemini-pro (mais estável)")
+    print("   • gemini-1.0-pro")
+    print("   • gemini-1.5-pro (se disponível)")
+    print("   • gemini-1.5-flash (se disponível)")
+    
+    print("\n🔧 Para usar no código, altere em llm_service.py:")
+    print("   model = genai.GenerativeModel('gemini-pro')  # ← Use um dos modelos acima")
+    
+except Exception as e:
+    print(f"\n❌ Erro ao listar modelos: {e}")
+    print("\n💡 Dica: Verifique se sua GEMINI_API_KEY está correta no .env")
+
+print("\n" + "=" * 70 + "\n")

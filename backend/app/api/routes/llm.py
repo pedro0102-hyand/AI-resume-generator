@@ -29,7 +29,7 @@ def generate_ai_resume(
 
     generated = GeneratedResume(
         resume_id=resume.id,
-        content=result
+        generated_data=result
     )
 
     db.add(generated)

@@ -51,7 +51,7 @@ def generate_resume_with_ai(cv_data: dict, job_context: dict) -> dict:
 
     try:
         # Usa a API estável do generativeai
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(prompt)
         
         text = response.text.strip()
