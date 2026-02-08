@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from .auth import router as auth_router
-from app.services.resume_service import router as resume_router
+from .resume import router as resume_router
 from .llm import router as llm_router
 from .templates import router as templates_router
 from .export import router as export_router
