@@ -9,17 +9,26 @@ import {
   User, 
   Briefcase, 
   GraduationCap,
-  Eye
+  Eye,
+  Wand2
 } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { AIOptimizationModal } from '../components/AIOptimizationModal';
+
+interface JobContext {
+  title: string;
+  level: string;
+  objective: string;
+  description: string;
+}
 
 export const Editor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [optimizing, setOptimizing] = useState(false);
+  const [showAIModal, setShowAIModal] = useState(false);
 
   // Estado unificado do currículo baseado nos seus schemas de backend
   const [resumeData, setResumeData] = useState({
@@ -41,12 +50,9 @@ export const Editor = () => {
         const response = await api.get(`/resumes/${id}`);
         console.log('Dados recebidos:', response.data);
         
-        // O backend retorna { id, user_id, data }
-        // Então precisamos acessar response.data.data
         if (response.data && response.data.data) {
           setResumeData(response.data.data);
         } else {
-          // Se não houver dados, inicializa com valores vazios
           setResumeData({
             fullName: '',
             email: '',
@@ -83,23 +89,40 @@ export const Editor = () => {
     }
   };
 
-  const handleAIOptimize = async () => {
+  const handleAIOptimize = async (jobContext: JobContext) => {
     try {
-      setOptimizing(true);
-      toast.loading("A IA está a otimizar o seu resumo...", { id: 'ai-status' });
+      toast.loading("A IA está otimizando seu currículo...", { id: 'ai-optimize' });
       
-      const response = await api.post(`/ai/optimize`, {
-        content: resumeData.summary,
-        context: "summary"
+      const response = await api.post(`/ai/generate/${id}`, {
+        job_context: jobContext
       });
 
-      setResumeData({ ...resumeData, summary: response.data.optimized_content });
-      toast.success("Resumo otimizado pela IA!", { id: 'ai-status' });
-    } catch (error) {
+      // Atualizar o currículo com os dados otimizados pela IA
+      setResumeData(prev => ({
+        ...prev,
+        summary: response.data.summary || prev.summary,
+        experience: response.data.tailoredExperiences || prev.experience,
+        skills: response.data.highlightedSkills || prev.skills
+      }));
+
+      toast.success("Currículo otimizado com sucesso!", { id: 'ai-optimize' });
+      
+      // Mostrar sugestões adicionais se houver
+      if (response.data.suggestedAdditions && response.data.suggestedAdditions.length > 0) {
+        setTimeout(() => {
+          toast.success(
+            `💡 Sugestões: ${response.data.suggestedAdditions.join(', ')}`,
+            { duration: 8000 }
+          );
+        }, 1000);
+      }
+    } catch (error: any) {
       console.error('Erro na otimização:', error);
-      toast.error("Erro na otimização", { id: 'ai-status' });
-    } finally {
-      setOptimizing(false);
+      toast.error(
+        error.response?.data?.detail || "Erro ao otimizar com IA",
+        { id: 'ai-optimize' }
+      );
+      throw error; // Re-throw para o modal tratar
     }
   };
 
@@ -159,6 +182,13 @@ export const Editor = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
+      {/* Modal de Otimização com IA */}
+      <AIOptimizationModal 
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        onOptimize={handleAIOptimize}
+      />
+
       {/* Header Fixo */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -172,8 +202,15 @@ export const Editor = () => {
           </div>
           <div className="flex gap-3">
             <button 
+              onClick={() => setShowAIModal(true)}
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition"
+            >
+              <Wand2 size={18} />
+              Otimizar com IA
+            </button>
+            <button 
               onClick={() => navigate(`/preview/${id}`)}
-              className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
+              className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition"
             >
               <Eye size={18} />
               Visualizar
@@ -224,6 +261,12 @@ export const Editor = () => {
               value={resumeData.location}
               onChange={(e) => setResumeData({...resumeData, location: e.target.value})}
             />
+            <input 
+              placeholder="LinkedIn (URL)" 
+              className="p-2 border rounded-md md:col-span-2"
+              value={resumeData.linkedin}
+              onChange={(e) => setResumeData({...resumeData, linkedin: e.target.value})}
+            />
           </div>
         </section>
 
@@ -235,9 +278,8 @@ export const Editor = () => {
               <h2>Resumo Profissional</h2>
             </div>
             <button 
-              onClick={handleAIOptimize}
-              disabled={optimizing || !resumeData.summary}
-              className="text-xs flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-200 transition disabled:opacity-50"
+              onClick={() => setShowAIModal(true)}
+              className="text-xs flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-200 transition"
             >
               <Sparkles size={14} />
               Otimizar com IA
