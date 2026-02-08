@@ -8,7 +8,8 @@ import {
   Trash2, 
   User, 
   Briefcase, 
-  GraduationCap 
+  GraduationCap,
+  Eye
 } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
@@ -170,6 +171,13 @@ export const Editor = () => {
             </h1>
           </div>
           <div className="flex gap-3">
+            <button 
+              onClick={() => navigate(`/preview/${id}`)}
+              className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
+            >
+              <Eye size={18} />
+              Visualizar
+            </button>
             <button 
               onClick={handleSave}
               disabled={saving}

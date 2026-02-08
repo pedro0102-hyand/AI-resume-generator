@@ -5,6 +5,7 @@ import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { Templates } from './pages/Templates';
 import { Editor } from './pages/Editor';
+import { Preview } from './pages/Preview';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} /> 
         <Route path="/templates" element={<Templates />} />
         <Route path="/editor/:id" element={<Editor />} />
+        <Route path="/preview/:id" element={<Preview />} />
 
         {/* Redirecionamento Inicial */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
