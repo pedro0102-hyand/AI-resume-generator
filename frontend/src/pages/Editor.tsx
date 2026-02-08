@@ -10,11 +10,13 @@ import {
   Briefcase, 
   GraduationCap,
   Eye,
-  Wand2
+  Wand2,
+  Tag
 } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { AIOptimizationModal } from '../components/AIOptimizationModal';
+import { AIOptimizationModal } from '../components/AIoptimizationModal';
+import { SkillsManager } from '../components/SkillsManager';
 
 interface JobContext {
   title: string;
@@ -293,6 +295,13 @@ export const Editor = () => {
             onChange={(e) => setResumeData({...resumeData, summary: e.target.value})}
           />
         </section>
+
+        {/* Habilidades/Skills */}
+        <SkillsManager 
+          skills={resumeData.skills}
+          onSkillsChange={(newSkills) => setResumeData({...resumeData, skills: newSkills})}
+          onAIOptimize={() => setShowAIModal(true)}
+        />
 
         {/* Experiências */}
         <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
