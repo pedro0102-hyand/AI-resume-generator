@@ -22,21 +22,44 @@ export const Editor = () => {
 
   // Estado unificado do currículo baseado nos seus schemas de backend
   const [resumeData, setResumeData] = useState({
-    title: '',
-    full_name: '',
+    fullName: '',
     email: '',
     phone: '',
+    location: '',
+    linkedin: '',
     summary: '',
-    experiences: [] as any[],
-    educations: [] as any[]
+    skills: [] as string[],
+    experience: [] as any[],
+    education: [] as any[]
   });
 
   useEffect(() => {
     const loadResume = async () => {
       try {
+        setLoading(true);
         const response = await api.get(`/resumes/${id}`);
-        setResumeData(response.data);
-      } catch (error) {
+        console.log('Dados recebidos:', response.data);
+        
+        // O backend retorna { id, user_id, data }
+        // Então precisamos acessar response.data.data
+        if (response.data && response.data.data) {
+          setResumeData(response.data.data);
+        } else {
+          // Se não houver dados, inicializa com valores vazios
+          setResumeData({
+            fullName: '',
+            email: '',
+            phone: '',
+            location: '',
+            linkedin: '',
+            summary: '',
+            skills: [],
+            experience: [],
+            education: []
+          });
+        }
+      } catch (error: any) {
+        console.error('Erro ao carregar dados do currículo:', error);
         toast.error("Erro ao carregar dados do currículo");
         navigate('/dashboard');
       } finally {
@@ -52,6 +75,7 @@ export const Editor = () => {
       await api.put(`/resumes/${id}`, resumeData);
       toast.success("Alterações guardadas!");
     } catch (error) {
+      console.error('Erro ao guardar:', error);
       toast.error("Erro ao guardar");
     } finally {
       setSaving(false);
@@ -63,7 +87,7 @@ export const Editor = () => {
       setOptimizing(true);
       toast.loading("A IA está a otimizar o seu resumo...", { id: 'ai-status' });
       
-      const response = await api.post(`/llm/optimize`, {
+      const response = await api.post(`/ai/optimize`, {
         content: resumeData.summary,
         context: "summary"
       });
@@ -71,6 +95,7 @@ export const Editor = () => {
       setResumeData({ ...resumeData, summary: response.data.optimized_content });
       toast.success("Resumo otimizado pela IA!", { id: 'ai-status' });
     } catch (error) {
+      console.error('Erro na otimização:', error);
       toast.error("Erro na otimização", { id: 'ai-status' });
     } finally {
       setOptimizing(false);
@@ -80,11 +105,56 @@ export const Editor = () => {
   const addExperience = () => {
     setResumeData({
       ...resumeData,
-      experiences: [...resumeData.experiences, { company: '', position: '', description: '', start_date: '', end_date: '' }]
+      experience: [
+        ...resumeData.experience, 
+        { 
+          id: Date.now().toString(),
+          company: '', 
+          role: '', 
+          period: '',
+          description: ''
+        }
+      ]
     });
   };
 
-  if (loading) return <div className="flex justify-center items-center h-screen">Carregando editor...</div>;
+  const removeExperience = (index: number) => {
+    const newExp = [...resumeData.experience];
+    newExp.splice(index, 1);
+    setResumeData({ ...resumeData, experience: newExp });
+  };
+
+  const addEducation = () => {
+    setResumeData({
+      ...resumeData,
+      education: [
+        ...resumeData.education,
+        {
+          id: Date.now().toString(),
+          institution: '',
+          degree: '',
+          year: ''
+        }
+      ]
+    });
+  };
+
+  const removeEducation = (index: number) => {
+    const newEdu = [...resumeData.education];
+    newEdu.splice(index, 1);
+    setResumeData({ ...resumeData, education: newEdu });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando editor...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -95,11 +165,9 @@ export const Editor = () => {
             <button onClick={() => navigate('/dashboard')} className="p-2 hover:bg-gray-100 rounded-full transition">
               <ArrowLeft size={20} />
             </button>
-            <input 
-              className="text-xl font-bold bg-transparent border-b border-transparent focus:border-blue-500 outline-none px-2"
-              value={resumeData.title}
-              onChange={(e) => setResumeData({...resumeData, title: e.target.value})}
-            />
+            <h1 className="text-xl font-bold">
+              {resumeData.fullName || 'Novo Currículo'}
+            </h1>
           </div>
           <div className="flex gap-3">
             <button 
@@ -126,14 +194,27 @@ export const Editor = () => {
             <input 
               placeholder="Nome Completo" 
               className="p-2 border rounded-md"
-              value={resumeData.full_name}
-              onChange={(e) => setResumeData({...resumeData, full_name: e.target.value})}
+              value={resumeData.fullName}
+              onChange={(e) => setResumeData({...resumeData, fullName: e.target.value})}
             />
             <input 
               placeholder="Email" 
+              type="email"
               className="p-2 border rounded-md"
               value={resumeData.email}
               onChange={(e) => setResumeData({...resumeData, email: e.target.value})}
+            />
+            <input 
+              placeholder="Telefone" 
+              className="p-2 border rounded-md"
+              value={resumeData.phone}
+              onChange={(e) => setResumeData({...resumeData, phone: e.target.value})}
+            />
+            <input 
+              placeholder="Localização" 
+              className="p-2 border rounded-md"
+              value={resumeData.location}
+              onChange={(e) => setResumeData({...resumeData, location: e.target.value})}
             />
           </div>
         </section>
@@ -148,7 +229,7 @@ export const Editor = () => {
             <button 
               onClick={handleAIOptimize}
               disabled={optimizing || !resumeData.summary}
-              className="text-xs flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-200 transition"
+              className="text-xs flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-200 transition disabled:opacity-50"
             >
               <Sparkles size={14} />
               Otimizar com IA
@@ -170,57 +251,128 @@ export const Editor = () => {
               <Briefcase size={20} />
               <h2>Experiência Profissional</h2>
             </div>
-            <button onClick={addExperience} className="text-blue-600 hover:bg-blue-50 p-1 rounded-full">
+            <button onClick={addExperience} className="text-blue-600 hover:bg-blue-50 p-2 rounded-full transition">
               <Plus size={24} />
             </button>
           </div>
           
-          {resumeData.experiences.map((exp, index) => (
-            <div key={index} className="mb-6 p-4 border rounded-lg relative group">
-              <button 
-                onClick={() => {
-                  const newExp = [...resumeData.experiences];
-                  newExp.splice(index, 1);
-                  setResumeData({...resumeData, experiences: newExp});
-                }}
-                className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
-              >
-                <Trash2 size={18} />
-              </button>
-              <div className="grid grid-cols-2 gap-4 mb-4">
+          {resumeData.experience && resumeData.experience.length > 0 ? (
+            resumeData.experience.map((exp, index) => (
+              <div key={exp.id || index} className="mb-6 p-4 border rounded-lg relative group">
+                <button 
+                  onClick={() => removeExperience(index)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+                >
+                  <Trash2 size={18} />
+                </button>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <input 
+                    placeholder="Empresa" 
+                    className="p-2 border rounded-md"
+                    value={exp.company || ''}
+                    onChange={(e) => {
+                      const newExp = [...resumeData.experience];
+                      newExp[index].company = e.target.value;
+                      setResumeData({...resumeData, experience: newExp});
+                    }}
+                  />
+                  <input 
+                    placeholder="Cargo" 
+                    className="p-2 border rounded-md"
+                    value={exp.role || ''}
+                    onChange={(e) => {
+                      const newExp = [...resumeData.experience];
+                      newExp[index].role = e.target.value;
+                      setResumeData({...resumeData, experience: newExp});
+                    }}
+                  />
+                </div>
                 <input 
-                  placeholder="Empresa" 
-                  className="p-2 border rounded-md"
-                  value={exp.company}
+                  placeholder="Período (ex: Jan 2020 - Dez 2022)" 
+                  className="w-full p-2 border rounded-md mb-4"
+                  value={exp.period || ''}
                   onChange={(e) => {
-                    const newExp = [...resumeData.experiences];
-                    newExp[index].company = e.target.value;
-                    setResumeData({...resumeData, experiences: newExp});
+                    const newExp = [...resumeData.experience];
+                    newExp[index].period = e.target.value;
+                    setResumeData({...resumeData, experience: newExp});
                   }}
                 />
-                <input 
-                  placeholder="Cargo" 
-                  className="p-2 border rounded-md"
-                  value={exp.position}
+                <textarea 
+                  placeholder="Descrição das responsabilidades"
+                  className="w-full p-2 border rounded-md"
+                  rows={3}
+                  value={exp.description || ''}
                   onChange={(e) => {
-                    const newExp = [...resumeData.experiences];
-                    newExp[index].position = e.target.value;
-                    setResumeData({...resumeData, experiences: newExp});
+                    const newExp = [...resumeData.experience];
+                    newExp[index].description = e.target.value;
+                    setResumeData({...resumeData, experience: newExp});
                   }}
                 />
               </div>
-              <textarea 
-                placeholder="Descrição das responsabilidades"
-                className="w-full p-2 border rounded-md"
-                value={exp.description}
-                onChange={(e) => {
-                  const newExp = [...resumeData.experiences];
-                  newExp[index].description = e.target.value;
-                  setResumeData({...resumeData, experiences: newExp});
-                }}
-              />
+            ))
+          ) : (
+            <p className="text-gray-400 text-center py-8">Nenhuma experiência adicionada. Clique no + para adicionar.</p>
+          )}
+        </section>
+
+        {/* Educação */}
+        <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-2 text-blue-600 font-bold">
+              <GraduationCap size={20} />
+              <h2>Formação Acadêmica</h2>
             </div>
-          ))}
+            <button onClick={addEducation} className="text-blue-600 hover:bg-blue-50 p-2 rounded-full transition">
+              <Plus size={24} />
+            </button>
+          </div>
+          
+          {resumeData.education && resumeData.education.length > 0 ? (
+            resumeData.education.map((edu, index) => (
+              <div key={edu.id || index} className="mb-6 p-4 border rounded-lg relative group">
+                <button 
+                  onClick={() => removeEducation(index)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+                >
+                  <Trash2 size={18} />
+                </button>
+                <div className="grid grid-cols-2 gap-4">
+                  <input 
+                    placeholder="Instituição" 
+                    className="p-2 border rounded-md"
+                    value={edu.institution || ''}
+                    onChange={(e) => {
+                      const newEdu = [...resumeData.education];
+                      newEdu[index].institution = e.target.value;
+                      setResumeData({...resumeData, education: newEdu});
+                    }}
+                  />
+                  <input 
+                    placeholder="Curso/Grau" 
+                    className="p-2 border rounded-md"
+                    value={edu.degree || ''}
+                    onChange={(e) => {
+                      const newEdu = [...resumeData.education];
+                      newEdu[index].degree = e.target.value;
+                      setResumeData({...resumeData, education: newEdu});
+                    }}
+                  />
+                  <input 
+                    placeholder="Ano de conclusão" 
+                    className="p-2 border rounded-md col-span-2"
+                    value={edu.year || ''}
+                    onChange={(e) => {
+                      const newEdu = [...resumeData.education];
+                      newEdu[index].year = e.target.value;
+                      setResumeData({...resumeData, education: newEdu});
+                    }}
+                  />
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-400 text-center py-8">Nenhuma formação adicionada. Clique no + para adicionar.</p>
+          )}
         </section>
 
       </main>

@@ -32,17 +32,25 @@ export const Templates = () => {
 
   const handleSelectTemplate = async (templateId: string) => {
     try {
-      // Cria um novo currículo com o template selecionado e título padrão
+      // Cria um novo currículo com dados vazios seguindo o schema CVData
       const response = await api.post('/resumes/', {
-        title: `Meu Currículo - ${templateId.charAt(0).toUpperCase() + templateId.slice(1)}`,
-        template_name: templateId
+        fullName: '',
+        email: '',
+        phone: '',
+        location: '',
+        linkedin: '',
+        summary: '',
+        skills: [],
+        experience: [],
+        education: []
       });
       
       const newResume = response.data;
-      toast.success(`${templateId} selecionado!`);
+      toast.success(`Template ${TEMPLATES.find(t => t.id === templateId)?.name} selecionado!`);
       // Redireciona para o editor com o ID do currículo recém-criado
       navigate(`/editor/${newResume.id}`);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Erro ao criar currículo:', error.response?.data);
       toast.error("Erro ao iniciar novo currículo");
     }
   };

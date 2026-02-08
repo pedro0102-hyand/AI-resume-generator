@@ -3,14 +3,15 @@ from typing import List
 from app.schemas.experience import Experience
 from app.schemas.education import Education
 
-class CVData(BaseModel):
+from typing import Optional
 
-    fullName: str
-    email: str
-    phone: str
-    location: str
-    linkedin: str
-    summary: str
-    skills: List[str]
-    experience: List[Experience]
-    education: List[Education]
+class CVData(BaseModel):
+    fullName: Optional[str] = ''
+    email: Optional[str] = ''
+    phone: Optional[str] = ''
+    location: Optional[str] = ''
+    linkedin: Optional[str] = ''
+    summary: Optional[str] = ''
+    skills: Optional[List[str]] = []
+    experience: Optional[List[Experience]] = []
+    education: Optional[List[Education]] = []

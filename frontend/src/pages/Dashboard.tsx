@@ -16,9 +16,19 @@ import toast from 'react-hot-toast';
 // Interface baseada nos seus modelos de backend
 interface Resume {
   id: number;
-  title: string;
-  updated_at: string;
-  template_name: string;
+  data: {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+    linkedin?: string;
+    summary?: string;
+    skills?: string[];
+    experience?: any[];
+    education?: any[];
+  };
+  created_at?: string;
+  updated_at?: string;
 }
 
 export const Dashboard = () => {
@@ -32,8 +42,10 @@ export const Dashboard = () => {
     try {
       setIsLoading(true);
       const response = await api.get('/resumes/');
+      console.log('Currículos carregados:', response.data); // Debug
       setResumes(response.data);
     } catch (error) {
+      console.error('Erro ao carregar currículos:', error);
       toast.error("Erro ao carregar os seus currículos");
     } finally {
       setIsLoading(false);
@@ -61,8 +73,14 @@ export const Dashboard = () => {
     navigate('/login');
   };
 
+  // Função auxiliar para obter o título do currículo
+  const getResumeTitle = (resume: Resume): string => {
+    return resume.data?.fullName || 'Currículo sem nome';
+  };
+
+  // Filtro corrigido
   const filteredResumes = resumes.filter(r => 
-    r.title.toLowerCase().includes(searchTerm.toLowerCase())
+    getResumeTitle(r).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -158,18 +176,20 @@ export const Dashboard = () => {
                   </div>
 
                   <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
-                    {resume.title || "Sem título"}
+                    {getResumeTitle(resume)}
                   </h3>
                   
                   <div className="space-y-2 mb-6">
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                       <Layout size={14} />
-                      <span>Template: {resume.template_name || "Modern"}</span>
+                      <span>Template: Modern</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <Clock size={14} />
-                      <span>Editado em: {new Date(resume.updated_at).toLocaleDateString('pt-PT')}</span>
-                    </div>
+                    {resume.updated_at && (
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Clock size={14} />
+                        <span>Editado em: {new Date(resume.updated_at).toLocaleDateString('pt-PT')}</span>
+                      </div>
+                    )}
                   </div>
 
                   <button
