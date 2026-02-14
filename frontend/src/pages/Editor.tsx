@@ -32,7 +32,6 @@ export const Editor = () => {
   const [saving, setSaving] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
 
-  // Estado unificado do currículo baseado nos seus schemas de backend
   const [resumeData, setResumeData] = useState({
     fullName: '',
     email: '',
@@ -91,40 +90,62 @@ export const Editor = () => {
     }
   };
 
+  // ✅ FUNÇÃO CORRIGIDA - Mapeia response.data.generated_data e SALVA no backend
   const handleAIOptimize = async (jobContext: JobContext) => {
     try {
       toast.loading("A IA está otimizando seu currículo...", { id: 'ai-optimize' });
       
-      const response = await api.post(`/ai/generate/${id}`, {
-        job_context: jobContext
-      });
-
-      // Atualizar o currículo com os dados otimizados pela IA
-      setResumeData(prev => ({
-        ...prev,
-        summary: response.data.summary || prev.summary,
-        experience: response.data.tailoredExperiences || prev.experience,
-        skills: response.data.highlightedSkills || prev.skills
-      }));
-
-      toast.success("Currículo otimizado com sucesso!", { id: 'ai-optimize' });
+      console.log('📤 Job context enviado:', jobContext);
       
-      // Mostrar sugestões adicionais se houver
-      if (response.data.suggestedAdditions && response.data.suggestedAdditions.length > 0) {
+      // Enviar job_context diretamente
+      const response = await api.post(`/ai/generate/${id}`, jobContext);
+
+      console.log('📥 Resposta completa:', response.data);
+
+      // ✅ CRÍTICO: Extrair generated_data da resposta
+      const aiData = response.data.generated_data;
+      
+      if (!aiData) {
+        throw new Error('generated_data não encontrado na resposta');
+      }
+
+      console.log('✅ Dados da IA:', aiData);
+
+      // ✅ CRÍTICO: Mapear corretamente os campos
+      const optimizedData = {
+        ...resumeData,
+        summary: aiData.summary || resumeData.summary,
+        experience: aiData.tailoredExperiences || resumeData.experience,
+        skills: aiData.highlightedSkills || resumeData.skills
+      };
+
+      console.log('📝 Dados otimizados:', optimizedData);
+
+      // Atualizar React state
+      setResumeData(optimizedData);
+
+      // ✅ CRÍTICO: Salvar no backend SQLite
+      console.log('💾 Salvando no banco...');
+      await api.put(`/resumes/${id}`, optimizedData);
+      console.log('✅ Salvo com sucesso!');
+
+      toast.success("Currículo otimizado e salvo! 🎉", { id: 'ai-optimize' });
+      
+      if (aiData.suggestedAdditions?.length > 0) {
         setTimeout(() => {
           toast.success(
-            `💡 Sugestões: ${response.data.suggestedAdditions.join(', ')}`,
+            `💡 ${aiData.suggestedAdditions.slice(0,2).join(' ')}`,
             { duration: 8000 }
           );
         }, 1000);
       }
     } catch (error: any) {
-      console.error('Erro na otimização:', error);
+      console.error('❌ Erro:', error);
       toast.error(
-        error.response?.data?.detail || "Erro ao otimizar com IA",
+        error.response?.data?.detail || "Erro ao otimizar",
         { id: 'ai-optimize' }
       );
-      throw error; // Re-throw para o modal tratar
+      throw error;
     }
   };
 
@@ -184,14 +205,12 @@ export const Editor = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Modal de Otimização com IA */}
       <AIOptimizationModal 
         isOpen={showAIModal}
         onClose={() => setShowAIModal(false)}
         onOptimize={handleAIOptimize}
       />
 
-      {/* Header Fixo */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
@@ -231,7 +250,6 @@ export const Editor = () => {
 
       <main className="max-w-4xl mx-auto mt-8 px-4 grid grid-cols-1 gap-8">
         
-        {/* Dados Pessoais */}
         <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center gap-2 mb-6 text-blue-600 font-bold border-b pb-2">
             <User size={20} />
@@ -272,7 +290,6 @@ export const Editor = () => {
           </div>
         </section>
 
-        {/* Resumo Profissional com IA */}
         <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-2 text-blue-600 font-bold">
@@ -296,14 +313,12 @@ export const Editor = () => {
           />
         </section>
 
-        {/* Habilidades/Skills */}
         <SkillsManager 
           skills={resumeData.skills}
           onSkillsChange={(newSkills) => setResumeData({...resumeData, skills: newSkills})}
           onAIOptimize={() => setShowAIModal(true)}
         />
 
-        {/* Experiências */}
         <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-2 text-blue-600 font-bold">
@@ -374,7 +389,6 @@ export const Editor = () => {
           )}
         </section>
 
-        {/* Educação */}
         <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-2 text-blue-600 font-bold">
