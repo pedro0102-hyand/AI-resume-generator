@@ -30,10 +30,14 @@ export const Register = () => {
     setIsLoading(true);
 
     try {
-      const tokens = await authService.register(email, password);
-      authService.setToken(tokens.access_token);
-      toast.success('Conta criada com sucesso!');
-      navigate('/dashboard');
+      // ✅ CORREÇÃO: Não salva o token automaticamente
+      await authService.register(email, password);
+      
+      // ✅ Mensagem clara informando que precisa fazer login
+      toast.success('Conta criada com sucesso! Por favor, faça login.');
+      
+      // ✅ Redireciona para login ao invés do dashboard
+      navigate('/login');
     } catch (error: any) {
       console.error('Erro no registro:', error);
       toast.error(error.response?.data?.detail || 'Erro ao criar conta');
