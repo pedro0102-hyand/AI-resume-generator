@@ -1,27 +1,28 @@
-import io
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, Query
 from sqlalchemy.orm import Session
-from fpdf import FPDF
+from playwright.sync_api import sync_playwright
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.resume import Resume
+from app.services.template_service import (
+    render_template,
+    resume_model_to_template_data
+)
 
 router = APIRouter(prefix="/export", tags=["Export"])
-
-class ResumePDF(FPDF):
-    def footer(self):
-        # Posiciona a 1,5 cm do fim da página
-        self.set_y(-15)
-        self.set_font("Arial", "I", 8)
-        self.cell(0, 10, f"Página {self.page_no()}", align="C")
 
 @router.get("/pdf/{resume_id}")
 def export_resume_pdf(
     resume_id: int,
+    template_name: str = Query("modern", description="Nome do template (modern, classic, creative)"),
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
+    """
+    Exporta o currículo para PDF usando o template HTML especificado.
+    O PDF será gerado exatamente como aparece no preview.
+    """
     # 1. Busca o currículo no banco
     resume = db.query(Resume).filter(
         Resume.id == resume_id,
@@ -31,92 +32,54 @@ def export_resume_pdf(
     if not resume:
         raise HTTPException(status_code=404, detail="Currículo não encontrado")
 
-    # 2. Acessa os dados JSON do currículo
-    data = resume.data 
-    
     try:
-        pdf = ResumePDF()
-        pdf.add_page()
+        # 2. Converte dados do Resume para formato do template
+        template_data = resume_model_to_template_data(resume)
         
-        # --- CABEÇALHO ---
-        pdf.set_font("Arial", "B", 20)
-        full_name = data.get("fullName", "Sem Nome")
-        # O encode/decode latin-1 é usado apenas nas strings de texto, não no objeto final
-        pdf.cell(0, 12, full_name.encode('latin-1', 'replace').decode('latin-1'), ln=True)
+        # 3. Renderiza o template HTML (mesmo usado no preview)
+        html_content = render_template(template_name, template_data)
         
-        pdf.set_font("Arial", "", 10)
-        pdf.set_text_color(100, 100, 100)
-        contacts = f"{data.get('email', '')} | {data.get('phone', '')} | {data.get('location', '')}"
-        pdf.cell(0, 5, contacts.encode('latin-1', 'replace').decode('latin-1'), ln=True)
-        pdf.ln(10)
-
-        # --- RESUMO PROFISSIONAL ---
-        pdf.set_font("Arial", "B", 12)
-        pdf.set_text_color(0, 0, 0)
-        pdf.cell(0, 8, "RESUMO PROFISSIONAL", ln=True)
-        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-        pdf.ln(2)
-        
-        pdf.set_font("Arial", "", 11)
-        summary = data.get("summary", "")
-        pdf.multi_cell(0, 6, summary.encode('latin-1', 'replace').decode('latin-1'))
-        pdf.ln(5)
-
-        # --- EXPERIÊNCIA PROFISSIONAL ---
-        experiences = data.get("experience", [])
-        if experiences:
-            pdf.set_font("Arial", "B", 12)
-            pdf.cell(0, 8, "EXPERIÊNCIA PROFISSIONAL", ln=True)
-            pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-            pdf.ln(2)
+        # 4. Converte HTML para PDF usando Playwright
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
             
-            for exp in experiences:
-                pdf.set_font("Arial", "B", 11)
-                role_company = f"{exp.get('role')} @ {exp.get('company')}"
-                pdf.cell(0, 6, role_company.encode('latin-1', 'replace').decode('latin-1'), ln=True)
-                
-                pdf.set_font("Arial", "I", 9)
-                period = exp.get("period", "")
-                pdf.cell(0, 5, period.encode('latin-1', 'replace').decode('latin-1'), ln=True)
-                
-                pdf.set_font("Arial", "", 10)
-                desc = exp.get("description", "")
-                pdf.multi_cell(0, 5, desc.encode('latin-1', 'replace').decode('latin-1'))
-                pdf.ln(4)
-
-        # --- FORMAÇÃO ACADÊMICA ---
-        education = data.get("education", [])
-        if education:
-            pdf.set_font("Arial", "B", 12)
-            pdf.cell(0, 8, "FORMAÇÃO ACADÊMICA", ln=True)
-            pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-            pdf.ln(2)
+            # Define o conteúdo HTML
+            page.set_content(html_content, wait_until="networkidle")
             
-            for edu in education:
-                pdf.set_font("Arial", "B", 11)
-                inst_degree = f"{edu.get('institution')} - {edu.get('degree')}"
-                pdf.cell(0, 6, inst_degree.encode('latin-1', 'replace').decode('latin-1'), ln=True)
-                
-                pdf.set_font("Arial", "", 10)
-                year = f"Conclusão: {edu.get('year')}"
-                pdf.cell(0, 5, year.encode('latin-1', 'replace').decode('latin-1'), ln=True)
-                pdf.ln(2)
-
-        # 3. GERAÇÃO DO BINÁRIO PDF
-        # No fpdf2, o output() retorna bytes. NÃO use .encode() aqui.
-        pdf_bytes = pdf.output()
+            # Gera o PDF com configurações A4
+            pdf_bytes = page.pdf(
+                format="A4",
+                margin={
+                    "top": "1.5cm",
+                    "right": "1.5cm",
+                    "bottom": "1.5cm",
+                    "left": "1.5cm"
+                },
+                print_background=True
+            )
+            
+            browser.close()
         
-        # 4. RESPOSTA PARA DOWNLOAD
+        # 5. Retorna o PDF para download
         return Response(
-            content=bytes(pdf_bytes), # Garante que o FastAPI receba bytes puros
+            content=pdf_bytes,
             media_type="application/pdf",
             headers={
-                "Content-Disposition": f"attachment; filename=resume_{resume_id}.pdf"
+                "Content-Disposition": f"attachment; filename=resume_{resume_id}_{template_name}.pdf"
             }
         )
 
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Template '{template_name}' não encontrado"
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao gerar arquivo PDF: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao gerar arquivo PDF: {str(e)}"
+        )
 
 @router.get("/word/{resume_id}")
 def export_resume_rtf(
